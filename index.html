@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Otherworld Universal Tool</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #111827;
+      color: #f9fafb;
+      font: 16px system-ui, sans-serif;
+    }
+    main { max-width: 650px; margin: auto; }
+    h1 { color: #60a5fa; font-size: 26px; }
+    .card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      padding: 16px;
+      margin: 14px 0;
+      border-radius: 14px;
+    }
+    button, input {
+      font: inherit;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    button {
+      border: 0;
+      background: #2563eb;
+      color: white;
+      width: 100%;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      margin-top: 8px;
+      background: #111827;
+      color: white;
+      border: 1px solid #4b5563;
+    }
+    .muted { color: #9ca3af; font-size: 14px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Otherworld Legends</h1>
+  <p>Universal Data Tool · Android / iOS</p>
+
+  <section class="card">
+    <h2>A. Item Manager</h2>
+    <p class="muted">
+      Kiểm tra dữ liệu item từ file JSON do bạn xuất ra.
+    </p>
+    <button onclick="document.getElementById('save').click()">
+      Chọn file dữ liệu
+    </button>
+    <input id="save" type="file"
+           accept=".json,application/json">
+    <pre id="status">Chưa tải dữ liệu.</pre>
+  </section>
+
+  <section class="card">
+    <h2>B. Character & Skin</h2>
+    <p class="muted">
+      Dữ liệu nhân vật và skin sẽ được hiển thị nếu
+      tồn tại trong file đã nhập.
+    </p>
+    <pre id="characters">Chưa có dữ liệu.</pre>
+  </section>
+
+  <section class="card">
+    <h2>C. Resource Manager</h2>
+    <p class="muted">
+      Kiểm tra các trường tài nguyên trong dữ liệu JSON.
+    </p>
+    <pre id="resources">Chưa có dữ liệu.</pre>
+  </section>
+
+  <section class="card">
+    <h2>Xuất bản sao JSON</h2>
+    <button onclick="exportData()">Tải JSON</button>
+    <p class="muted">
+      Chỉ chỉnh sửa bản sao. Không ghi đè file gốc.
+    </p>
+  </section>
+</main>
+
+<script>
+  let gameData = null;
+
+  const status = document.getElementById("status");
+  const characters = document.getElementById("characters");
+  const resources = document.getElementById("resources");
+
+  document.getElementById("save").addEventListener("change", event => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        gameData = JSON.parse(reader.result);
+        status.textContent = "Đã đọc: " + file.name;
+        scan(gameData);
+      } catch {
+        gameData = null;
+        status.textContent =
+          "Không đọc được JSON. File có thể dùng định dạng khác.";
+      }
+    };
+
+    reader.readAsText(file);
+  });
+
+  function scan(value, path = "", output = []) {
+    if (!value || typeof value !== "object") return output;
+
+    for (const [key, child] of Object.entries(value)) {
+      const current = path ? path + "." + key : key;
+
+      if (/item|inventory|unlock|owned/i.test(key)) {
+        output.push("Item: " + current);
+      }
+
+      if (/character|hero|skin|costume/i.test(key)) {
+        output.push("Nhân vật/skin: " + current);
+      }
+
+      if (/coin|gold|gem|resource|currency|upgrade/i.test(key)) {
+        output.push("Tài nguyên: " + current);
+      }
+
+      if (child && typeof child === "object") {
+        scan(child, current, output);
+      }
+    }
+
+    return output;
+  }
+
+  function displayData(data) {
+    const lines = scan(data);
+    characters.textContent =
+      lines.filter(x => x.startsWith("Nhân vật/skin:")).join("\n")
+      || "Không tìm thấy trường nhân vật hoặc skin.";
+
+    resources.textContent =
+      lines.filter(x => x.startsWith("Tài nguyên:")).join("\n")
+      || "Không tìm thấy trường tài nguyên.";
+  }
+
+  function scan(data) {
+    const output = [];
+
+    function walk(value, path = "") {
+      if (!value || typeof value !== "object") return;
+
+      for (const [key, child] of Object.entries(value)) {
+        const current = path ? path + "." + key : key;
+
+        if (/item|inventory|unlock|owned/i.test(key))
+          output.push("Item: " + current);
+
+        if (/character|hero|skin|costume/i.test(key))
+          output.push("Nhân vật/skin: " + current);
+
+        if (/coin|gold|gem|resource|currency|upgrade/i.test(key))
+          output.push("Tài nguyên: " + current);
+
+        if (child && typeof child === "object")
+          walk(child, current);
+      }
+    }
+
+    walk(data);
+    displayDataSafe(output);
+    return output;
+  }
+
+  function displayDataSafe(lines) {
+    characters.textContent = lines
+      .filter(x => x.startsWith("Nhân vật/skin:"))
+      .join("\n") || "Không tìm thấy trường nhân vật hoặc skin.";
+
+    resources.textContent = lines
+      .filter(x => x.startsWith("Tài nguyên:"))
+      .join("\n") || "Không tìm thấy trường tài nguyên.";
+  }
+
+  function exportData() {
+    if (gameData === null) {
+      alert("Hãy chọn một file JSON hợp lệ trước.");
+      return;
+    }
+
+    const blob = new Blob(
+      [JSON.stringify(gameData, null, 2)],
+      { type: "application/json" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "otherworld-data-copy.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>
