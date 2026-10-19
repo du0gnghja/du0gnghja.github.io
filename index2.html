@@ -1,0 +1,25 @@
+<input type="file" id="file" accept=".plist">
+<pre id="output"></pre>
+
+<script type="module">
+import plist from
+  "https://esm.sh/plist@3.1.0";
+
+document.getElementById("file").addEventListener(
+  "change", async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = plist.parse(text);
+
+      document.getElementById("output").textContent =
+        JSON.stringify(data, null, 2);
+    } catch (error) {
+      document.getElementById("output").textContent =
+        "Không đọc được PLIST XML. File có thể ở dạng binary hoặc định dạng khác.";
+    }
+  }
+);
+</script>
